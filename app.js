@@ -12,3 +12,30 @@ $('#bagButton').onclick=()=>{renderBag();$('#bagDialog').showModal()};$('#askAbo
 $('#inquiry').onsubmit=e=>{e.preventDefault();const d=new FormData(e.target);message(`Hi Chloe! I’m ${d.get('name')}. I’d love to discuss ${d.get('type').toLowerCase()}.\n\n${d.get('idea')}\n\n${d.get('budget')?'Budget: '+d.get('budget')+'\n':''}${d.get('date')?'Desired date: '+d.get('date'):''}\n\nLooking forward to hearing your thoughts!`)};
 $('#copyMessage').onclick=async()=>{try{await navigator.clipboard.writeText($('#messageText').value);$('#copyStatus').textContent='Copied! Open Instagram and paste it into your message.'}catch{$('#messageText').focus();$('#messageText').select();$('#copyStatus').textContent='Select and copy the message above, then paste it into Instagram.'}};
 document.querySelectorAll('dialog').forEach(d=>d.addEventListener('click',e=>{if(e.target===d){const r=d.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)d.close()}}));$('#year').textContent=new Date().getFullYear();renderProducts();save();
+
+// Track the section beneath the sticky header, including direct anchor visits.
+const siteHeader=document.querySelector('header');
+const sectionLinks=[...siteHeader.querySelectorAll('nav a[href^="#"]')];
+const navSections=sectionLinks.map(link=>({link,section:document.getElementById(link.hash.slice(1))})).filter(item=>item.section);
+let navFrame=0;
+function updateActiveSection(){
+  navFrame=0;
+  const offset=siteHeader.getBoundingClientRect().height+16;
+  let current=null;
+  for(const item of navSections){if(item.section.getBoundingClientRect().top<=offset)current=item;}
+  for(const item of navSections){
+    if(item===current)item.link.setAttribute('aria-current','location');
+    else item.link.removeAttribute('aria-current');
+  }
+}
+function scheduleNavUpdate(){if(!navFrame)navFrame=requestAnimationFrame(updateActiveSection);}
+function updateNavOffset(){
+  document.documentElement.style.scrollPaddingTop=`${siteHeader.getBoundingClientRect().height+16}px`;
+  scheduleNavUpdate();
+}
+window.addEventListener('scroll',scheduleNavUpdate,{passive:true});
+window.addEventListener('resize',updateNavOffset);
+window.addEventListener('hashchange',scheduleNavUpdate);
+window.addEventListener('load',updateNavOffset);
+if('ResizeObserver' in window)new ResizeObserver(updateNavOffset).observe(siteHeader);
+updateNavOffset();
